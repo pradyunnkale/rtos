@@ -1,0 +1,29 @@
+{
+	"version": 6,
+
+	"configurePresets": [
+		{
+			"name": "host",
+			"displayName": "Host",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/host",
+
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"RTOS_PORT": "host"
+			}
+		},
+
+		{
+			"name": "mimxrt1064",
+			"displayName": "MIMXRT1064",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/mimxrt1064",
+
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"RTOS_PORT": "mimxrt1064"
+			}
+		}
+	]
+}
