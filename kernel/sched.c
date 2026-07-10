@@ -94,10 +94,8 @@ rtos_status_t sched_start(void)
 	}
 
 	task_set_state(current_task, TASK_RUNNING);
-	port_start_first_task(current_task);
 
-	// Should not normally return
-	return RTOS_ERR_INTERNAL;
+	return port_start_first_task(current_task);
 }
 
 rtos_status_t sched_add_task(task_t *task) 
@@ -147,7 +145,7 @@ rtos_status_t sched_yield(void)
 
 rtos_status_t sched_block_current(void);
 
-rtos_status_t sched_sleep_current_until(uint64_t ticks)
+rtos_status_t sched_sleep_current_until(uint64_t wake_time)
 {
 
 }
