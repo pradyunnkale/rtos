@@ -25,6 +25,7 @@ target_sources(rtos PRIVATE
 	port/${RTOS_PORT}/port_dma.c
 	port/${RTOS_PORT}/port_isr.c
 	port/${RTOS_PORT}/port_time.c
+	port/${RTOS_PORT}/port.c
 )
 
 target_include_directories(rtos PUBLIC
