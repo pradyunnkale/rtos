@@ -1,7 +1,8 @@
 #pragma once
 
+#include "rtos_time.h"
 #include "rtos_types.h"
-#include "task.h"
+#include "rtos_task.h"
 #include <stdint.h>
 
 rtos_status_t sched_init(void);
@@ -13,5 +14,8 @@ task_t *sched_current_task(void);
 
 rtos_status_t sched_yield(void);
 rtos_status_t sched_block_current(void);
-rtos_status_t sched_sleep_current_until(uint64_t wake_time);
+rtos_status_t sched_sleep_current_until(rtos_tick_t wake_time);
+rtos_status_t sched_terminate_current(void);
 
+void sched_wake_due_tasks(rtos_tick_t now);
+rtos_status_t sched_preempt(void);

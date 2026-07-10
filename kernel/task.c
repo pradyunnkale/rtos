@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "task.h"
+#include "rtos_task.h"
 #include "port.h"
 #include "sched.h"
 #include "task_internal.h"
@@ -17,7 +17,7 @@ void task_system_init(void)
 
 rtos_status_t task_init(task_t* task, uint8_t pid, task_entry_t entry, void *arg, uint8_t priority, uint8_t *stack_base, size_t stack_size)
 {
-	if (task == NULL || arg == NULL || stack_base == NULL || stack_size == 0) {
+	if (task == NULL || entry == NULL || stack_base == NULL || stack_size == 0) {
 		return RTOS_ERR_INVALID_ARG;
 	}
 
@@ -57,7 +57,7 @@ rtos_status_t task_create(task_t *task, task_entry_t entry, void *arg, uint8_t p
 		return status;
 	}
 
-	sched_add_task(task);
+	status = sched_add_task(task);
 
 	if (status != RTOS_OK)
 	{
@@ -75,8 +75,8 @@ void task_yield(void)
 	sched_yield();
 }
 
-rtos_status_t task_sleep_until(uint64_t ticks)
+rtos_status_t task_sleep_until(uint64_t wake_time)
 {
 	// Use the sched.c version because this is also dependent on the sched alg
-	return sched_sleep_current_until(ticks);
+	return sched_sleep_current_until(wake_time);
 }

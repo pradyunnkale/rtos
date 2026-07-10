@@ -1,8 +1,9 @@
 #include "sched.h"
 #include "port.h"
 #include "rtos_types.h"
-#include "task.h"
+#include "rtos_task.h"
 #include "task_internal.h"
+#include <stdbool.h>
 
 static task_t *ready_list;
 static task_t *sleep_list;
@@ -138,14 +139,149 @@ rtos_status_t sched_yield(void)
 	current_task = new;
 	task_set_state(current_task, TASK_RUNNING);
 
-	port_context_switch(old, new);
-
-	return RTOS_OK;
+	return port_context_switch(old, new);
 }
 
-rtos_status_t sched_block_current(void);
+rtos_status_t sched_block_current(void)
+{
+	task_t *blocked = current_task;
+	task_t *next;
+
+	if (blocked == NULL)
+	{
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	task_set_state(blocked, TASK_BLOCKED);
+
+	next = sched_pick_next();
+
+	if (next == NULL)
+	{
+		task_set_state(blocked, TASK_RUNNING);
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	current_task = next;
+	task_set_state(next, TASK_RUNNING);
+
+	return port_context_switch(blocked, next);
+}
 
 rtos_status_t sched_sleep_current_until(uint64_t wake_time)
 {
+	task_t *sleeping = current_task;
+	task_t *next;
 
+	if (sleeping == NULL)
+	{
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	sleeping->wake_time = wake_time;
+	task_set_state(sleeping, TASK_SLEEP);
+	sleep_list_add(sleeping);
+
+	next = sched_pick_next();
+
+	if (next == NULL)
+	{
+		current_task = NULL;
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	current_task = next;
+	task_set_state(next, TASK_RUNNING);
+
+	return port_context_switch(sleeping, next);
+}
+
+rtos_status_t sched_terminate_current(void)
+{
+	task_t *terminated = current_task;
+	task_t *next;
+
+	if (terminated == NULL)
+	{
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	task_set_state(terminated, TASK_TERMINATED);
+
+	next = sched_pick_next();
+
+	if (next == NULL)
+	{
+		current_task = NULL;
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	current_task = next;
+	task_set_state(next, TASK_RUNNING);
+
+	return port_context_switch(terminated, next);
+}
+
+static bool sched_should_preempt(void)
+{
+	if (current_task == NULL || ready_list == NULL)
+	{
+		return false;
+	}
+
+	return ready_list->priority < current_task->priority;
+}
+
+void sched_wake_due_tasks(uint64_t now)
+{
+	while (sleep_list != NULL && sleep_list->wake_time <= now)
+	{
+		task_t *task = sleep_list;
+
+		sleep_list = sleep_list->next;
+		task->next = NULL;
+
+		task_set_state(task, TASK_READY);
+		ready_list_add(task);
+	}
+
+	if (sched_should_preempt())
+	{
+		port_request_context_switch();
+	}
+}
+
+rtos_status_t sched_preempt(void)
+{
+	task_t *old;
+	task_t *new;
+
+	if (!sched_should_preempt())
+	{
+		return RTOS_OK;
+	}
+
+	old = current_task;
+
+	if (old == NULL)
+	{
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	task_set_state(old, TASK_READY);
+	ready_list_add(old);
+
+	new = sched_pick_next();
+
+	if (new == NULL)
+	{
+		current_task = old;
+		task_set_state(old, TASK_RUNNING);
+		return RTOS_ERR_NO_TASKS;
+	}
+
+	current_task = new;
+	task_set_state(new, TASK_RUNNING);
+
+	return port_context_switch(old, new);
 }

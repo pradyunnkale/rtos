@@ -13,6 +13,8 @@ typedef enum
 }
 rtos_status_t;
 
-typedef void (*task_entry_t)(void *);
+typedef uint64_t rtos_tick_t;
+typedef uint64_t rtos_time_us_t;
 
+typedef void (*task_entry_t)(void *);
 
