@@ -29,3 +29,8 @@ Example:
 cmake --preset mimxrt1064
 cmake --build build/mimxrt1064
 ```
+
+You can also run:
+```bash
+./make.sh
+```
