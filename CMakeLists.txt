@@ -19,13 +19,9 @@ set_property(
     CACHE RTOS_PORT
     PROPERTY STRINGS
     host
-    mimxrt1064
 )
 
-if(
-    NOT RTOS_PORT STREQUAL "host"
-    AND NOT RTOS_PORT STREQUAL "mimxrt1064"
-)
+if(NOT RTOS_PORT STREQUAL "host")
     message(FATAL_ERROR "Unsupported RTOS_PORT: ${RTOS_PORT}")
 endif()
 
@@ -34,19 +30,12 @@ add_library(rtos STATIC)
 target_sources(
     rtos
     PRIVATE
-        kernel/dma.c
-        kernel/isr.c
-        kernel/log.c
-        kernel/mutex.c
-        kernel/queue.c
+        kernel/mailbox.c
         kernel/rtos.c
         kernel/sched.c
-        kernel/sem.c
         kernel/task.c
         kernel/time_internal.c
 
-        port/${RTOS_PORT}/port_dma.c
-        port/${RTOS_PORT}/port_isr.c
         port/${RTOS_PORT}/port_time.c
 )
 

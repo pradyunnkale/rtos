@@ -10,6 +10,7 @@ typedef enum
 	RTOS_ERR_INVALID_ARG = -2,
 	RTOS_ERR_NO_TASKS = -3,
 	RTOS_ERR_INTERNAL = -4,
+	RTOS_ERR_EMPTY = -5,
 }
 rtos_status_t;
 

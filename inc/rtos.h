@@ -4,3 +4,4 @@
 #include "rtos_task.h"
 #include "rtos_time.h"
 #include "rtos_kernel.h"
+#include "rtos_mailbox.h"

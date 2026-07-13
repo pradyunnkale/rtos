@@ -5,6 +5,7 @@
 #include <ucontext.h>
 
 #include "port.h"
+#include "port_types.h"
 #include "rtos_task.h"
 #include "rtos_types.h"
 #include "sched.h"
@@ -42,7 +43,12 @@ static rtos_status_t port_context_switch_init(void)
 	struct sigaction action = {0};
 
 	action.sa_handler = context_switch_handler;
-	sigemptyset(&action.sa_mask);
+	if (sigemptyset(&action.sa_mask) == -1 ||
+		sigaddset(&action.sa_mask, SIGALRM) == -1 ||
+		sigaddset(&action.sa_mask, SIGUSR1) == -1)
+	{
+		return RTOS_ERR_INTERNAL;
+	}
 
 	action.sa_flags = 0;
 	if (sigaction(SIGUSR1, &action, NULL) == -1)
@@ -124,9 +130,12 @@ static rtos_status_t port_tick_init(void)
 
 	action.sa_handler = tick_handler;
 
-	sigemptyset(&action.sa_mask);
-	sigaddset(&action.sa_mask, SIGALRM);
-	sigaddset(&action.sa_mask, SIGUSR1);
+	if (sigemptyset(&action.sa_mask) == -1 ||
+		sigaddset(&action.sa_mask, SIGALRM) == -1 ||
+		sigaddset(&action.sa_mask, SIGUSR1) == -1)
+	{
+		return RTOS_ERR_INTERNAL;
+	}
 
 	if (sigaction(SIGALRM, &action, NULL) == -1)
 	{
@@ -183,4 +192,43 @@ void port_request_context_switch(void)
 	{
 		(void)raise(SIGUSR1);
 	}
+}
+
+rtos_status_t port_critical_enter(port_critical_state_t *state)
+{
+	sigset_t blocked;
+
+	if (state == NULL)
+	{
+		return RTOS_ERR_INVALID_ARG;
+	}
+
+	if (sigemptyset(&blocked) == -1 ||
+		sigaddset(&blocked, SIGALRM) == -1 ||
+		sigaddset(&blocked, SIGUSR1) == -1)
+	{
+		return RTOS_ERR_INTERNAL;
+	}
+
+	if (sigprocmask(SIG_BLOCK, &blocked, &state->previous_mask) == -1)
+	{
+		return RTOS_ERR_INTERNAL;
+	}
+
+	return RTOS_OK;
+}
+
+rtos_status_t port_critical_exit(const port_critical_state_t *state)
+{
+	if (state == NULL)
+	{
+		return RTOS_ERR_INVALID_ARG;
+	}
+
+	if (sigprocmask(SIG_SETMASK, &state->previous_mask, NULL) == -1)
+	{
+		return RTOS_ERR_INTERNAL;
+	}
+
+	return RTOS_OK;
 }

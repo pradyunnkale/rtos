@@ -21,14 +21,6 @@ cmake --build build/host
 | Preset | Target |
 |--------|--------|
 | `host` | Native host simulation |
-| `mimxrt1064` | NXP MIMXRT1064 |
-
-Example:
-
-```bash
-cmake --preset mimxrt1064
-cmake --build build/mimxrt1064
-```
 
 You can also run:
 ```bash
