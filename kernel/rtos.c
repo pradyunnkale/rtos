@@ -16,12 +16,6 @@ rtos_status_t rtos_init(void)
         return status;
     }
 
-    status = time_init();
-    if (status != RTOS_OK)
-    {
-        return status;
-    }
-
     return RTOS_OK;
 }
 

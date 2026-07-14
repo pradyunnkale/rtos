@@ -2,5 +2,4 @@
 
 #include "rtos_types.h"
 
-rtos_status_t time_init(void);
-rtos_tick_t time_now(void);
+rtos_time_t time_now(void);

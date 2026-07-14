@@ -8,11 +8,13 @@
 #define CONTROL_PRIORITY 0U
 #define LOGGING_PRIORITY 3U
 
-#define CONTROL_PERIOD_MS 100U
-#define LOGGING_PERIOD_US 50000ULL
+#define CONTROL_PERIOD RTOS_MS(100U)
+#define LOGGING_PERIOD RTOS_US(50000ULL)
 
 static task_t control_task;
 static task_t logging_task;
+
+static rtos_time_t test_start;
 
 static uint8_t control_stack[TASK_STACK_SIZE];
 static uint8_t logging_stack[TASK_STACK_SIZE];
@@ -21,28 +23,24 @@ static void control_entry(void *arg)
 {
     (void)arg;
 
-    rtos_tick_t next_release_ms = rtos_time_now();
-    rtos_time_us_t next_release_us = rtos_time_now_us();
+    rtos_time_t next_release = rtos_time_now();
 
     for (;;)
     {
-        rtos_time_us_t now_us = rtos_time_now_us();
+        rtos_time_t now = rtos_time_now();
 
-        int64_t jitter_us =
-            (int64_t)now_us - (int64_t)next_release_us;
+        int64_t jitter_ns = (int64_t)now - (int64_t)next_release;
 
         printf(
             "CONTROL at %llu us, jitter %+lld us\n",
-            (unsigned long long)now_us,
-            (long long)jitter_us
+            (unsigned long long)RTOS_TIME_TO_US(now - test_start),
+            (long long)(jitter_ns / (int64_t)RTOS_NS_PER_US)
         );
         fflush(stdout);
 
-        next_release_ms += CONTROL_PERIOD_MS;
-        next_release_us +=
-            (rtos_time_us_t)CONTROL_PERIOD_MS * 1000ULL;
+        next_release += CONTROL_PERIOD;
 
-        if (task_sleep_until(next_release_ms) != RTOS_OK)
+        if (task_sleep_until(next_release) != RTOS_OK)
         {
             fprintf(stderr, "control task failed to sleep\n");
             return;
@@ -54,17 +52,17 @@ static void logging_entry(void *arg)
 {
     (void)arg;
 
-    rtos_time_us_t next_print_us = rtos_time_now_us();
+    rtos_time_t next_print = rtos_time_now();
 
     for (;;)
     {
-        rtos_time_us_t now_us = rtos_time_now_us();
+        rtos_time_t now = rtos_time_now();
 
-        if (now_us >= next_print_us)
+        if (now >= next_print)
         {
             printf(
                 "LOGGING at %llu us\n",
-                (unsigned long long)now_us
+                (unsigned long long)RTOS_TIME_TO_US(now - test_start)
             );
             fflush(stdout);
 
@@ -74,9 +72,9 @@ static void logging_entry(void *arg)
              */
             do
             {
-                next_print_us += LOGGING_PERIOD_US;
+                next_print += LOGGING_PERIOD;
             }
-            while (next_print_us <= now_us);
+            while (next_print <= now);
         }
 
         /*
@@ -127,6 +125,8 @@ int main(void)
         fprintf(stderr, "logging task creation failed: %d\n", status);
         return 1;
     }
+
+    test_start = rtos_time_now();
 
     status = rtos_start();
 

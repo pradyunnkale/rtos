@@ -14,8 +14,7 @@ typedef enum
 }
 rtos_status_t;
 
-typedef uint64_t rtos_tick_t;
-typedef uint64_t rtos_time_us_t;
+typedef uint64_t rtos_time_t; // nanoseconds
 
 typedef void (*task_entry_t)(void *);
 

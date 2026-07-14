@@ -31,7 +31,7 @@ typedef struct task
 
     struct task *next;
 
-    rtos_tick_t wake_time;
+    rtos_time_t wake_time;
     port_context_t context;
 } task_t;
 
@@ -39,4 +39,4 @@ rtos_status_t task_create(task_t *task, task_entry_t entry, void *arg, uint8_t p
 
 void task_yield(void);
 
-rtos_status_t task_sleep_until(rtos_tick_t wake_time);
+rtos_status_t task_sleep_until(rtos_time_t wake_time);

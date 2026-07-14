@@ -9,6 +9,18 @@ static task_t *ready_list;
 static task_t *sleep_list;
 static task_t *current_task;
 
+static void sched_update_timer(void)
+{
+	if (sleep_list == NULL)
+	{
+		(void)port_timer_disarm();
+	}
+	else
+	{
+		(void)port_timer_arm(sleep_list->wake_time);
+	}
+}
+
 static void ready_list_add(task_t *task)
 {
 	task_t *curr = ready_list;
@@ -224,7 +236,7 @@ exit_critical:
 	return status != RTOS_OK ? status : exit_status;
 }
 
-rtos_status_t sched_sleep_current_until(uint64_t wake_time)
+rtos_status_t sched_sleep_current_until(rtos_time_t wake_time)
 {
 	port_critical_state_t critical;
 	rtos_status_t status;
@@ -246,7 +258,12 @@ rtos_status_t sched_sleep_current_until(uint64_t wake_time)
 		goto exit_critical;
 	}
 
-	/* A sleeping task needs another ready task (normally idle) to run. */
+	if (wake_time <= time_now())
+	{
+		status = RTOS_OK;
+		goto exit_critical;
+	}
+
 	if (ready_list == NULL)
 	{
 		status = RTOS_ERR_NO_TASKS;
@@ -254,8 +271,10 @@ rtos_status_t sched_sleep_current_until(uint64_t wake_time)
 	}
 
 	sleeping->wake_time = wake_time;
+
 	task_set_state(sleeping, TASK_SLEEP);
 	sleep_list_add(sleeping);
+	sched_update_timer();
 
 	next = sched_pick_next();
 
@@ -333,7 +352,7 @@ static bool sched_should_preempt(void)
 	return ready_list->priority < current_task->priority;
 }
 
-void sched_wake_due_tasks(uint64_t now)
+void sched_wake_due_tasks(rtos_time_t now)
 {
 	port_critical_state_t critical;
 
@@ -352,6 +371,8 @@ void sched_wake_due_tasks(uint64_t now)
 		task_set_state(task, TASK_READY);
 		ready_list_add(task);
 	}
+
+	sched_update_timer();
 
 	if (sched_should_preempt())
 	{

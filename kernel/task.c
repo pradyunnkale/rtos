@@ -75,7 +75,7 @@ void task_yield(void)
 	sched_yield();
 }
 
-rtos_status_t task_sleep_until(uint64_t wake_time)
+rtos_status_t task_sleep_until(rtos_time_t wake_time)
 {
 	// Use the sched.c version because this is also dependent on the sched alg
 	return sched_sleep_current_until(wake_time);

@@ -1,7 +1,6 @@
 #include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/time.h>
 #include <ucontext.h>
 
 #include "port.h"
@@ -116,45 +115,6 @@ rtos_status_t port_context_switch(task_t *from, task_t *to)
 	return RTOS_OK;
 }
 
-static void tick_handler(int signal_number)
-{
-	(void)signal_number;
-
-	sched_wake_due_tasks(time_now());
-}
-
-static rtos_status_t port_tick_init(void)
-{
-	struct sigaction action = {0};
-	struct itimerval timer = {0};
-
-	action.sa_handler = tick_handler;
-
-	if (sigemptyset(&action.sa_mask) == -1 ||
-		sigaddset(&action.sa_mask, SIGALRM) == -1 ||
-		sigaddset(&action.sa_mask, SIGUSR1) == -1)
-	{
-		return RTOS_ERR_INTERNAL;
-	}
-
-	if (sigaction(SIGALRM, &action, NULL) == -1)
-	{
-		return RTOS_ERR_INTERNAL;
-	}
-
-	timer.it_interval.tv_sec = 0;
-	timer.it_interval.tv_usec = 1000;
-
-	timer.it_value = timer.it_interval;
-
-	if (setitimer(ITIMER_REAL, &timer, NULL) == -1)
-	{
-		return RTOS_ERR_INTERNAL;
-	}
-
-	return RTOS_OK;
-}
-
 rtos_status_t port_start_first_task(task_t *task)
 {
 	if (task == NULL)
@@ -169,7 +129,7 @@ rtos_status_t port_start_first_task(task_t *task)
 		return status;
 	}
 
-	status = port_tick_init();
+	status = port_timer_init();
 
 	if (status != RTOS_OK)
 	{
