@@ -8,20 +8,15 @@
 
 #define CONTROL_PRIORITY  0U
 #define GUIDANCE_PRIORITY 1U
-#define IDLE_PRIORITY     UINT8_MAX
-
 #define CONTROL_PERIOD  RTOS_MS(100U)
 #define GUIDANCE_PERIOD RTOS_MS(250U)
 
 static task_t control_task;
 static task_t guidance_task;
-static task_t idle_task;
-
 static rtos_time_t test_start;
 
 static uint8_t control_stack[TASK_STACK_SIZE];
 static uint8_t guidance_stack[TASK_STACK_SIZE];
-static uint8_t idle_stack[TASK_STACK_SIZE];
 
 static void control_entry(void *arg)
 {
@@ -73,23 +68,6 @@ static void guidance_entry(void *arg)
     }
 }
 
-static void idle_entry(void *arg)
-{
-    (void)arg;
-
-    /*
-     * The host timer asynchronously wakes sleeping tasks and requests
-     * preemption. The idle task therefore does not manage wakeups.
-     */
-    for (;;)
-    {
-        /*
-         * This can busy-spin for the initial host implementation.
-         * Later, the host port can sleep until the next timer event.
-         */
-    }
-}
-
 int main(void)
 {
     rtos_status_t status;
@@ -128,21 +106,6 @@ int main(void)
     if (status != RTOS_OK)
     {
         fprintf(stderr, "guidance task creation failed: %d\n", status);
-        return 1;
-    }
-
-    status = task_create(
-        &idle_task,
-        idle_entry,
-        NULL,
-        IDLE_PRIORITY,
-        idle_stack,
-        sizeof(idle_stack)
-    );
-
-    if (status != RTOS_OK)
-    {
-        fprintf(stderr, "idle task creation failed: %d\n", status);
         return 1;
     }
 

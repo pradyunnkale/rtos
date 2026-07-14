@@ -19,3 +19,6 @@ rtos_status_t sched_terminate_current(void);
 
 void sched_wake_due_tasks(rtos_time_t now);
 rtos_status_t sched_preempt(void);
+
+rtos_status_t sched_wait_notification(void);
+void sched_wake_notified_tasks(void);

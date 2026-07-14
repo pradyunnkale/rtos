@@ -116,6 +116,17 @@ if(RTOS_PORT STREQUAL "host")
             rtos
     )
 
+    add_executable(
+        host_notification_test
+        test/host_notification_test.c
+    )
+
+    target_link_libraries(
+        host_notification_test
+        PRIVATE
+            rtos
+    )
+
     enable_testing()
 
     add_test(
@@ -131,6 +142,16 @@ if(RTOS_PORT STREQUAL "host")
     add_test(
         NAME host_preemption_test
         COMMAND host_preemption_test
+    )
+
+    add_test(
+        NAME host_notification_test
+        COMMAND host_notification_test
+    )
+
+    set_tests_properties(
+        host_notification_test
+        PROPERTIES TIMEOUT 5
     )
 endif()
 

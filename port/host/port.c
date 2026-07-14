@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <ucontext.h>
+#include <unistd.h>
 
 #include "port.h"
 #include "port_types.h"
@@ -14,6 +15,8 @@
 static volatile sig_atomic_t context_switch_pending;
 static volatile sig_atomic_t in_context_switch;
 
+static pthread_t scheduler_thread;
+static bool scheduler_thread_valid;
 
 static void context_switch_handler(int signal_number)
 {
@@ -30,6 +33,8 @@ static void context_switch_handler(int signal_number)
 	do
 	{
 		context_switch_pending = 0;
+
+		sched_wake_notified_tasks();
 		(void)sched_preempt();
 	}
 	while(context_switch_pending);
@@ -117,12 +122,17 @@ rtos_status_t port_context_switch(task_t *from, task_t *to)
 
 rtos_status_t port_start_first_task(task_t *task)
 {
+	rtos_status_t status;
+
 	if (task == NULL)
 	{
 		return RTOS_ERR_INVALID_ARG;
 	}
 
-	rtos_status_t status = port_context_switch_init();
+	scheduler_thread = pthread_self();
+	scheduler_thread_valid = false;
+
+	status = port_context_switch_init();
 
 	if (status != RTOS_OK)
 	{
@@ -136,8 +146,11 @@ rtos_status_t port_start_first_task(task_t *task)
 		return status;
 	}
 
+	scheduler_thread_valid = true;
+
 	if (setcontext(&task->context.native) == -1)
 	{
+		scheduler_thread_valid = false;
 		return RTOS_ERR_INTERNAL;
 	}
 
@@ -152,6 +165,11 @@ void port_request_context_switch(void)
 	{
 		(void)raise(SIGUSR1);
 	}
+}
+
+void port_idle_wait(void)
+{
+	(void)pause();
 }
 
 rtos_status_t port_critical_enter(port_critical_state_t *state)
@@ -191,4 +209,12 @@ rtos_status_t port_critical_exit(const port_critical_state_t *state)
 	}
 
 	return RTOS_OK;
+}
+
+void port_notify_scheduler(void)
+{
+	if (scheduler_thread_valid)
+	{
+		(void)pthread_kill(scheduler_thread, SIGUSR1);
+	}
 }

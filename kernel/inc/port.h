@@ -12,6 +12,7 @@ rtos_status_t port_start_first_task(task_t *task);
 rtos_status_t port_critical_enter(port_critical_state_t *state);
 rtos_status_t port_critical_exit(const port_critical_state_t *state);
 void port_request_context_switch(void);
+void port_idle_wait(void);
 
 rtos_status_t port_timer_init(void);
 rtos_status_t port_timer_arm(rtos_time_t deadline);
@@ -20,3 +21,5 @@ rtos_status_t port_timer_disarm(void);
 rtos_status_t port_shared_lock_init(port_shared_lock_t *lock);
 rtos_status_t port_shared_lock_acquire(port_shared_lock_t *lock);
 rtos_status_t port_shared_lock_release(port_shared_lock_t *lock);
+
+void port_notify_scheduler(void);

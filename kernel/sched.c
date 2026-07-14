@@ -3,11 +3,17 @@
 #include "rtos_types.h"
 #include "rtos_task.h"
 #include "task_internal.h"
+#include <stdatomic.h>
 #include <stdbool.h>
 
 static task_t *ready_list;
 static task_t *sleep_list;
 static task_t *current_task;
+
+#define RTOS_MAX_TASKS 32U
+
+static task_t *all_tasks[RTOS_MAX_TASKS];
+static size_t task_count;
 
 static void sched_update_timer(void)
 {
@@ -93,6 +99,7 @@ rtos_status_t sched_init(void)
 	ready_list = NULL;
 	sleep_list = NULL;
 	current_task = NULL;
+	task_count = 0U;
 
 	return RTOS_OK;
 }
@@ -115,6 +122,7 @@ rtos_status_t sched_add_task(task_t *task)
 {
 	port_critical_state_t critical;
 	rtos_status_t status;
+	rtos_status_t exit_status;
 
 	if (task == NULL)
 	{
@@ -127,16 +135,20 @@ rtos_status_t sched_add_task(task_t *task)
 		return status;
 	}
 
-	task_set_state(task, TASK_READY);
-	ready_list_add(task);
-
-	status = port_critical_exit(&critical);
-	if (status != RTOS_OK)
+	if (task_count >= RTOS_MAX_TASKS)
 	{
-		return status;
+		status = RTOS_ERR_INTERNAL;
+		goto exit_critical;
 	}
 
-	return RTOS_OK;
+	all_tasks[task_count++] = task;
+	task_set_state(task, TASK_READY);
+	ready_list_add(task);
+	status = RTOS_OK;
+
+exit_critical:
+		exit_status = port_critical_exit(&critical);
+		return status != RTOS_OK ? status : exit_status;
 }
 
 task_t *sched_current_task(void)
@@ -431,4 +443,83 @@ rtos_status_t sched_preempt(void)
 exit_critical:
 	exit_status = port_critical_exit(&critical);
 	return status != RTOS_OK ? status : exit_status;
+}
+
+rtos_status_t sched_wait_notification(void)
+{
+	port_critical_state_t critical;
+	rtos_status_t status;
+	task_t *task;
+	task_t *next;
+
+	status = port_critical_enter(&critical);
+	if (status != RTOS_OK)
+	{
+		return status;
+	}
+
+	task = current_task;
+	if (task == NULL)
+	{
+		status = RTOS_ERR_NO_TASKS;
+		goto exit;
+	}
+
+	for (;;)
+	{
+		uint32_t count = atomic_load_explicit(&task->notification_count, memory_order_acquire);
+		while (count > 0U)
+		{
+			if (atomic_compare_exchange_weak_explicit(&task->notification_count, &count, count - 1U, memory_order_acquire, memory_order_relaxed))
+			{
+				task->waiting_for_notification = false;
+				status = RTOS_OK;
+				goto exit;
+			}
+		}
+
+		task->waiting_for_notification = true;
+		task_set_state(task, TASK_BLOCKED);
+
+		next = sched_pick_next();
+		if (next == NULL)
+		{
+			task->waiting_for_notification = false;
+			task_set_state(task, TASK_RUNNING);
+			status = RTOS_ERR_NO_TASKS;
+			goto exit;
+		}
+
+		current_task = next;
+		task_set_state(next, TASK_RUNNING);
+
+		status = port_context_switch(task, next);
+		if (status != RTOS_OK)
+		{
+			goto exit;
+		}
+	}
+
+exit:
+	{
+		rtos_status_t exit_status = port_critical_exit(&critical);
+		return status != RTOS_OK ? status : exit_status;
+	}
+}
+
+void sched_wake_notified_tasks(void)
+{
+	size_t index;
+
+	for (index = 0U; index < task_count; index++)
+	{
+		task_t *task = all_tasks[index];
+
+		if (task->state == TASK_BLOCKED && task->waiting_for_notification && atomic_load_explicit(&task->notification_count, memory_order_acquire) > 0U)
+		{
+			task->waiting_for_notification = false;
+			task_set_state(task, TASK_READY);
+			ready_list_add(task);
+		}
+	}
 }

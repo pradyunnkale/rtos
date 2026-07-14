@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 
 #include "rtos_types.h"
 #include "port_types.h"
@@ -33,6 +35,9 @@ typedef struct task
 
     rtos_time_t wake_time;
     port_context_t context;
+
+		_Atomic uint32_t notification_count;
+		bool waiting_for_notification;
 } task_t;
 
 rtos_status_t task_create(task_t *task, task_entry_t entry, void *arg, uint8_t priority, uint8_t *stack, size_t stack_size);
@@ -40,3 +45,5 @@ rtos_status_t task_create(task_t *task, task_entry_t entry, void *arg, uint8_t p
 void task_yield(void);
 
 rtos_status_t task_sleep_until(rtos_time_t wake_time);
+rtos_status_t task_notify_give(task_t *task);
+rtos_status_t task_notify_take(void);
