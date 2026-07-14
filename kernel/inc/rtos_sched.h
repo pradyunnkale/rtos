@@ -12,7 +12,7 @@ rtos_status_t sched_add_task(task_t *task);
 
 task_t *sched_current_task(void);
 
-rtos_status_t sched_yield(void);
+rtos_status_t rtos_sched_yield(void);
 rtos_status_t sched_block_current(void);
 rtos_status_t sched_sleep_current_until(rtos_time_t wake_time);
 rtos_status_t sched_terminate_current(void);

@@ -3,7 +3,7 @@
 
 #include "rtos_task.h"
 #include "port.h"
-#include "sched.h"
+#include "rtos_sched.h"
 #include "task_internal.h"
 #include "rtos_types.h"
 
@@ -72,7 +72,7 @@ rtos_status_t task_create(task_t *task, task_entry_t entry, void *arg, uint8_t p
 void task_yield(void)
 {
 	// Use the sched.c version because this should just call a scheduler alg
-	sched_yield();
+	(void)rtos_sched_yield();
 }
 
 rtos_status_t task_sleep_until(rtos_time_t wake_time)

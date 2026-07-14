@@ -16,3 +16,7 @@ void port_request_context_switch(void);
 rtos_status_t port_timer_init(void);
 rtos_status_t port_timer_arm(rtos_time_t deadline);
 rtos_status_t port_timer_disarm(void);
+
+rtos_status_t port_shared_lock_init(port_shared_lock_t *lock);
+rtos_status_t port_shared_lock_acquire(port_shared_lock_t *lock);
+rtos_status_t port_shared_lock_release(port_shared_lock_t *lock);

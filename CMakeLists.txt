@@ -40,10 +40,19 @@ target_sources(
 )
 
 if(RTOS_PORT STREQUAL "host")
+    find_package(Threads REQUIRED)
+
     target_sources(
         rtos
         PRIVATE
             port/host/port.c
+            port/host/port_lock.c
+    )
+
+    target_link_libraries(
+        rtos
+        PUBLIC
+            Threads::Threads
     )
 endif()
 

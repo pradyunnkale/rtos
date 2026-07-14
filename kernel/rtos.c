@@ -1,7 +1,7 @@
 #include "rtos_kernel.h"
 
 #include "task_internal.h"
-#include "sched.h"
+#include "rtos_sched.h"
 #include "time_internal.h"
 
 rtos_status_t rtos_init(void)

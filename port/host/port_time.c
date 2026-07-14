@@ -1,6 +1,6 @@
 #include "port.h"
 #include "rtos_time.h"
-#include "sched.h"
+#include "rtos_sched.h"
 #include <stddef.h>
 #include <signal.h>
 

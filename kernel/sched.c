@@ -1,4 +1,4 @@
-#include "sched.h"
+#include "rtos_sched.h"
 #include "port.h"
 #include "rtos_types.h"
 #include "rtos_task.h"
@@ -144,7 +144,7 @@ task_t *sched_current_task(void)
 	return current_task;
 }
 
-rtos_status_t sched_yield(void)
+rtos_status_t rtos_sched_yield(void)
 {
 	port_critical_state_t critical;
 	rtos_status_t status;

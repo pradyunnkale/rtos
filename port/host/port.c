@@ -7,7 +7,7 @@
 #include "port_types.h"
 #include "rtos_task.h"
 #include "rtos_types.h"
-#include "sched.h"
+#include "rtos_sched.h"
 #include "task_internal.h"
 #include "time_internal.h"
 
